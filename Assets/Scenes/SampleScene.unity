@@ -369,8 +369,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dc466ba4e835d624099ae812600e5061, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Grid
-  width: 4
-  height: 6
   cellSize: 1
   defaultTile: {fileID: 8212162350419457503, guid: 25d33d67c8df54348bc77aaa3df0840a, type: 3}
   originPositionX: 0
@@ -378,6 +376,7 @@ MonoBehaviour:
   tilesArray:
   - {fileID: 8212162350419457503, guid: 25d33d67c8df54348bc77aaa3df0840a, type: 3}
   - {fileID: 820938304409541319, guid: c193a31de2d710e4ab77e438173e45b1, type: 3}
+  - {fileID: 2874882327186486289, guid: f26a2642a7ee5f64a9d06dab2720151f, type: 3}
   gridSeperator: 47
 --- !u!4 &1651232760
 Transform:
