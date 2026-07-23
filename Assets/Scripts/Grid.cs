@@ -7,8 +7,7 @@ using UnityEngine.Rendering;
 public class Grid : MonoBehaviour
 {
     private int width, height;
-    private int tempWidth;
-    [SerializeField]private float cellSize;
+    private float cellSize;
     [SerializeField] private GameObject defaultTile;
     private Vector2 originPosition;
     [SerializeField] private int originPositionX, originPositionY;
@@ -20,110 +19,145 @@ public class Grid : MonoBehaviour
     //1 = wall
     //3 = na
 
-    [SerializeField] char gridSeperator;
+    private char gridSeperator;
 
     private string levelData;
+    private string[] levelDataArray;
 
     void InstatiateValues()
     {
         originPosition = new Vector2(originPositionX, originPositionY);
         gridDictionary = new Dictionary<Vector2, Cell>();
         levelData = File.ReadAllText(Application.dataPath + "\\LevelsData\\Level1.txt");
-        EstablishGridDimensions();
+        Debug.Log($"Level data read from file: {levelData}");
+        levelDataArray = File.ReadAllLines(Application.dataPath + "\\LevelsData\\Level1.txt");
+        //levelDataArray = levelData.Split('\n');
 
+        /*
+         * for (int i = 0; i < levelDataArray.Length; i++)
+        {
+            levelDataArray[i].TrimEnd('\n');
+            Debug.Log($"Row {i} is {levelDataArray[i]}");
+            Debug.Log($"Row {i} is {levelDataArray[i].Length}"+" size");
+        }
+        */
+
+        //using first sprite in array as measure for cell size
+        cellSize = tilesArray[0].GetComponent<SpriteRenderer>().bounds.size.x;
+        EstablishGridDimensions();
     }
 
     void EstablishGridDimensions()
     {
-        tempWidth = 0;
         width = 0;
-        foreach (char c in levelData)
+        int tempWidth = 0;
+
+        height = levelDataArray.Length;
+
+        for (int i = 0; i < levelDataArray.Length; i++)
         {
-            tempWidth++;
-            if (c == gridSeperator)
+            
+            foreach (char c in levelDataArray[i])
             {
-                height++;
-                if (tempWidth > width) { width = tempWidth; }
+                tempWidth++;
             }
+            if (tempWidth > width) { width = tempWidth; }
+            tempWidth = 0;
         }
+        //height -= 1;
+        //width -= 1;
+        //To account for array indexing starting at 0, we subtract 1 from the width and height to get the correct dimensions for the grid array.
+        //width -= 1;
+        //It is counting the new line as a character, so we subtract 1 from the height to get the correct number of rows in the grid array.
+        Debug.Log($"Grid dimensions established: width = {width}, height = {height}");
     }
 
-    void Start()
-    {
-        InstatiateValues();
-        GenerateGrid();
-    }
-
-    void TranslateLevelFile()
-    {
-        gridArray = new Cell[width, height];
-
-        for (int i = 0; i < width; i++)
+        void Start()
         {
-            for (int j = 0; j < height; j++)
-            {
-                gridArray[i, j] = new Cell();
-            }
+            InstatiateValues();
+            GenerateGrid();
         }
 
-        int x = 0;
-        int y = 0;
-        foreach (char c in levelData)
+        void TranslateLevelFile()
         {
-            if (c == '0') { gridArray[x, y].cellType = Cell.CellType.floor; }
-            if (c == '1') { gridArray[x, y].cellType = Cell.CellType.wall; }
-            if (c == gridSeperator)
+            gridArray = new Cell[width, height];
+
+            for (int i = 0; i < width; i++)
             {
-                for(int i=x; i< width; i++)
+                for (int j = 0; j < height; j++)
                 {
-                    gridArray[x, y].cellType = Cell.CellType.na;
+                    gridArray[i, j] = new Cell();
+                }
+            }
+
+            int x = 0;
+
+
+            for (int i = 0; i < levelDataArray.Length; i++)
+            {
+                x = 0;
+                foreach (char c in levelDataArray[i])
+                {
+                Debug.Log("Length of row "+i +" is "+(levelDataArray[i].Length-1));
+                    //Debug.Log($"Translating char {c} at position {x},{i}");
+                    if (c == '0') { gridArray[x, i].cellType = Cell.CellType.floor; }
+                    if (c == '1') { gridArray[x, i].cellType = Cell.CellType.wall; }
+                    x++;
                 }
 
-                y += 1;
-            }
-        }
-    }
-
-    void GenerateGrid()
-    {
-        TranslateLevelFile();
-
-        for (int x = 0; x < width; x++)
-        {
-            for (int y = 0; y < height; y++)
-            {
-                gridArray[x, y] = new Cell();
-
-                Vector2 spawnPoint = new Vector2();
-                spawnPoint.x = originPosition.x + (cellSize / 2) * x;
-                spawnPoint.y = originPosition.y + (cellSize / 2) * y;
-                
-                GameObject tilePrefab;
-                switch (gridArray[x, y].cellType)
+                if (x < width)
                 {
-                    case Cell.CellType.floor:
-                        tilePrefab = tilesArray[0];
-                        break;
-
-                    case Cell.CellType.wall:
-                        tilePrefab = tilesArray[1];
-                        break;
-                    default:
-                        tilePrefab = tilesArray[2];
-                        break;
+                    for (int j = x; j < width; j++)
+                    {
+                        gridArray[j, i].cellType = Cell.CellType.na;
+                    }
                 }
-
-                GameObject spawnedTile = Instantiate(tilePrefab, spawnPoint,Quaternion.identity, transform);
-                spawnedTile.name = $"Tile {x} , {y}";
-
-                
-
-
-                gridDictionary[new Vector2(x, y)] = gridArray[x, y];
-
             }
         }
-    }
+
+        void GenerateGrid()
+        {
+            TranslateLevelFile();
+
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = height-1; y >= 0; y--)
+                {
+                    Vector2 spawnPoint = new Vector2();
+                    spawnPoint.x = originPosition.x + (cellSize) * (x + 1);
+                    spawnPoint.y = originPosition.y - (cellSize) * (y + 1);
+
+                    GameObject tilePrefab;
+                    //Debug.Log("y is " + y);
+
+                    switch (gridArray[x, y].cellType)
+                    {
+                        case Cell.CellType.floor:
+                            tilePrefab = tilesArray[0];
+                            //Debug.Log("Assigning floor tile prefab");
+                            break;
+
+                        case Cell.CellType.wall:
+                            tilePrefab = tilesArray[1];
+                            //Debug.Log("Assigning wall tile prefab");
+                            break;
+                        default:
+                            tilePrefab = tilesArray[2];
+                            //Debug.Log("Assigning na tile prefab");
+                            break;
+                    }
+
+                   // Debug.Log($"Spawning tile with type {gridArray[x, y].cellType}");
+
+                    GameObject spawnedTile = Instantiate(tilePrefab, spawnPoint, Quaternion.identity, transform);
+                    spawnedTile.name = $"Tile {x} , {y}";
+
+                    gridDictionary[new Vector2(x, y)] = gridArray[x, y];
+
+                }
+            }
+        }
+    
 
     public Cell GetCell(Vector2 pos)
     {
