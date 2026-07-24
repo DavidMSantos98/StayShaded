@@ -24,6 +24,14 @@ public class Grid : MonoBehaviour
     private string levelData;
     private string[] levelDataArray;
 
+
+
+        void Awake()
+        {
+            InstatiateValues();
+            GenerateGrid();
+        }
+
     void InstatiateValues()
     {
         originPosition = new Vector2(originPositionX, originPositionY);
@@ -56,7 +64,7 @@ public class Grid : MonoBehaviour
 
         for (int i = 0; i < levelDataArray.Length; i++)
         {
-            
+
             foreach (char c in levelDataArray[i])
             {
                 tempWidth++;
@@ -72,13 +80,7 @@ public class Grid : MonoBehaviour
         Debug.Log($"Grid dimensions established: width = {width}, height = {height}");
     }
 
-        void Start()
-        {
-            InstatiateValues();
-            GenerateGrid();
-        }
-
-        void TranslateLevelFile()
+    void TranslateLevelFile()
         {
             gridArray = new Cell[width, height];
 
@@ -100,8 +102,10 @@ public class Grid : MonoBehaviour
                 {
                 //Debug.Log("Length of row "+i +" is "+(levelDataArray[i].Length-1));
                     //Debug.Log($"Translating char {c} at position {x},{i}");
-                    if (c == '0') { gridArray[x, i].cellType = Cell.CellType.floor; }
-                    if (c == '1') { gridArray[x, i].cellType = Cell.CellType.wall; }
+                    if (c == '0') { gridArray[x, i].cellType = Cell.CellType.floor;
+                                    gridArray[x, i].isWalkable = true;}
+                    if (c == '1') { gridArray[x, i].cellType = Cell.CellType.wall;
+                                    gridArray[x, i].isWalkable = false;}
                     x++;
                 }
 
@@ -110,12 +114,13 @@ public class Grid : MonoBehaviour
                     for (int j = x; j < width; j++)
                     {
                         gridArray[j, i].cellType = Cell.CellType.na;
-                    }
+                        gridArray[j, i].isWalkable = false;
+                }
                 }
             }
         }
 
-        void GenerateGrid()
+    void GenerateGrid()
         {
             TranslateLevelFile();
 
@@ -151,6 +156,7 @@ public class Grid : MonoBehaviour
 
                     GameObject spawnedTile = Instantiate(tilePrefab, spawnPoint, Quaternion.identity, transform);
                     spawnedTile.name = $"Tile {x} , {y}";
+                    gridArray[x, y].cellObject = spawnedTile;
 
                 //not sure if needed, but adding to dictionary for now
                 gridDictionary[new Vector2(x, y)] = gridArray[x, y];
@@ -160,7 +166,7 @@ public class Grid : MonoBehaviour
         }
     
 
-    public Cell GetCell(int x,int y)
+    public Cell GetCell(Vector2 gridPos)
     {
         /*
         //using dictionary to get cell at position, if it exists, otherwise return null
@@ -172,15 +178,30 @@ public class Grid : MonoBehaviour
 
         try
         {
-            return gridArray[x, y];
+            return gridArray[(int)gridPos.x, (int)gridPos.y];
         }
         catch
         {
-            Debug.Log($"Cell at position {x}, {y} does not exist in grid array.");
+            Debug.Log($"Cell at position {(int)gridPos.x}, {(int)gridPos.x} does not exist in grid array.");
             return null;
         }
 
         
+    }
+
+    public bool isCellReal(Vector2 gridLoc)
+    {
+        if (gridLoc.x < 0 || gridLoc.y < 0)
+        {
+            return false;
+        }
+
+        if (gridLoc.x >= width || gridLoc.y >= height)
+        {
+            return false;
+        }
+
+        return true;
     }
 
 

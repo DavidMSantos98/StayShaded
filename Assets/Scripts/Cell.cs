@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class Cell
 {
-    public bool isUsable;
+    public bool isWalkable;
     public enum CellType
     {
         floor,
@@ -12,4 +12,5 @@ public class Cell
     }
 
     public CellType cellType;
+    public GameObject cellObject; // Reference to the GameObject representing this cell
 }
