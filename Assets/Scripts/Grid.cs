@@ -98,7 +98,7 @@ public class Grid : MonoBehaviour
                 x = 0;
                 foreach (char c in levelDataArray[i])
                 {
-                Debug.Log("Length of row "+i +" is "+(levelDataArray[i].Length-1));
+                //Debug.Log("Length of row "+i +" is "+(levelDataArray[i].Length-1));
                     //Debug.Log($"Translating char {c} at position {x},{i}");
                     if (c == '0') { gridArray[x, i].cellType = Cell.CellType.floor; }
                     if (c == '1') { gridArray[x, i].cellType = Cell.CellType.wall; }
@@ -152,21 +152,35 @@ public class Grid : MonoBehaviour
                     GameObject spawnedTile = Instantiate(tilePrefab, spawnPoint, Quaternion.identity, transform);
                     spawnedTile.name = $"Tile {x} , {y}";
 
-                    gridDictionary[new Vector2(x, y)] = gridArray[x, y];
+                //not sure if needed, but adding to dictionary for now
+                gridDictionary[new Vector2(x, y)] = gridArray[x, y];
 
                 }
             }
         }
     
 
-    public Cell GetCell(Vector2 pos)
+    public Cell GetCell(int x,int y)
     {
-        if(gridDictionary.TryGetValue(pos,out var cell))
+        /*
+        //using dictionary to get cell at position, if it exists, otherwise return null
+        if (gridDictionary.TryGetValue(pos,out var cell))
         {
             return cell;
         }
+        */
 
-        return null;
+        try
+        {
+            return gridArray[x, y];
+        }
+        catch
+        {
+            Debug.Log($"Cell at position {x}, {y} does not exist in grid array.");
+            return null;
+        }
+
+        
     }
 
 
