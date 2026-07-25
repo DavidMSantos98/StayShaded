@@ -106,7 +106,10 @@ public class Grid : MonoBehaviour
                                     gridArray[x, i].isWalkable = true;}
                     if (c == '1') { gridArray[x, i].cellType = Cell.CellType.wall;
                                     gridArray[x, i].isWalkable = false;}
-                    x++;
+
+                gridArray[x,i].gridPosition = new Vector2(x, i);
+
+                x++;
                 }
 
                 if (x < width)
@@ -115,7 +118,10 @@ public class Grid : MonoBehaviour
                     {
                         gridArray[j, i].cellType = Cell.CellType.na;
                         gridArray[j, i].isWalkable = false;
-                }
+                    
+                        gridArray[j, i].gridPosition = new Vector2(j, i);
+
+                    }
                 }
             }
         }
@@ -152,11 +158,13 @@ public class Grid : MonoBehaviour
                             break;
                     }
 
-                   // Debug.Log($"Spawning tile with type {gridArray[x, y].cellType}");
+                // Debug.Log($"Spawning tile with type {gridArray[x, y].cellType}");
 
-                    GameObject spawnedTile = Instantiate(tilePrefab, spawnPoint, Quaternion.identity, transform);
-                    spawnedTile.name = $"Tile {x} , {y}";
-                    gridArray[x, y].cellObject = spawnedTile;
+                GameObject spawnedTile = Instantiate(tilePrefab, spawnPoint, Quaternion.identity, transform);
+                spawnedTile.name = $"Tile {x} , {y}";
+                gridArray[x, y].cellObject = spawnedTile;
+                gridArray[x, y].AssingSortingLayer();
+
 
                 //not sure if needed, but adding to dictionary for now
                 gridDictionary[new Vector2(x, y)] = gridArray[x, y];

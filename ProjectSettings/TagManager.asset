@@ -38,11 +38,17 @@ TagManager:
   - 
   - 
   m_SortingLayers:
-  - name: Tiles
+  - name: FloorTiles
     uniqueID: 813293201
     locked: 0
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: Vision Cone
+    uniqueID: 2532759797
+    locked: 0
+  - name: WallTiles
+    uniqueID: 718875875
     locked: 0
   m_RenderingLayers:
   - Default
