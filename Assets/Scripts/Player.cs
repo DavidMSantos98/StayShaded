@@ -12,4 +12,6 @@ public class Player : MonoBehaviour
             hitEnemy = true;
        }
     }
+
+
 }

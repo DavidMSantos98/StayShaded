@@ -11,16 +11,20 @@ public class Enemy
 
     public void MoveNext()
     {
+            
+            Cell newCell = path.Dequeue();
+            //enemyObject.transform.position = nextCell.cellObject.transform.position;
+            enemyPosition = newCell.gridPosition;
+            path.Enqueue(newCell); // Add the cell back to the end of the queue for looping
+ 
+    }
+
+    public bool canMove()
+    {
         if (path.Count > 0)
-        {
-            Cell nextCell = path.Dequeue();
-            enemyObject.transform.position = nextCell.cellObject.transform.position;
-            enemyPosition = nextCell.gridPosition;
-            path.Enqueue(nextCell); // Add the cell back to the end of the queue for looping
-        }
-        else
-        {
-                       Debug.Log("Enemy has no more moves in its path.");
-        }
+        { return true; }
+        else {
+            Debug.Log("Enemy has no more moves in its path.");
+            return false; }
     }
 }

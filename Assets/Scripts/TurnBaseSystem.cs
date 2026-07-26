@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -20,24 +21,37 @@ public class TurnBaseSystem : MonoBehaviour
     [SerializeField] private GameObject player;
 
     [SerializeField] private GameObject[] enemyPrefabArray;
-    
+    [SerializeField] private GameObject enemyManager;
+    [SerializeField] private float enemyMoveSpeed;
+
     [Header("Path: Up=0 / Right=1 / Down=2  / Left=3 / Stay=4")] 
     [SerializeField] private Vector3[] enemyPositions;
 
     private Enemy[] enemyList;
 
+    private Movement movementScript;
+    private Movement playerMovement;
+    public bool agentMoving;
+
+    Queue<GameObject> enemyQueue;
+    Queue<GameObject> temporaryEnemyQueue;
     public enum gameState
     {
-        START, PLAYERTURN, ENEMYACTION, PLAYERACTION, WON, LOSS
+        START, PLAYERTURN, ENEMYTURN, ENEMYACTION, PLAYERACTION, WON, LOSS
     }
 
     public gameState currentGameState;
 
     void Start()
     {
+        enemyQueue= new Queue<GameObject>();
+        temporaryEnemyQueue= new Queue<GameObject>();
+        agentMoving = false;
+        playerMovement = player.GetComponent<Movement>();
+        movementScript =transform.GetComponent<Movement>();
         playerMovedThisTurn = false;
         currentGameState = gameState.START;
-        MoveToCell(grid.GetCell(playerStartPosition));
+        SnapToCell(grid.GetCell(playerStartPosition));
         playerCurrentPosition = playerStartPosition;
         enemyList = new Enemy[enemyPositions.Length];
         GenerateEnemies();
@@ -58,9 +72,11 @@ public class TurnBaseSystem : MonoBehaviour
                 GameObject enemyObject = Instantiate(enemyPrefabArray[0],
                                         grid.GetCell(enemyCord).cellObject.transform.position, Quaternion.identity);
                 enemyObject.name = $"Enemy {index}";
+                enemyObject.transform.SetParent(enemyManager.transform);
 
                 enemyList[index].enemyObject = enemyObject;
                 enemyList[index].pathDirections= enemyPositions[index].z.ToString();
+                enemyQueue.Enqueue(enemyObject);
             }
             else
             {
@@ -120,52 +136,105 @@ public class TurnBaseSystem : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if(Input.GetKeyDown(KeyCode.Space))
-        {
-            currentGameState = gameState.PLAYERTURN;
-            turnTime = 0;
-        }
 
-        if(currentGameState == gameState.PLAYERTURN)
+        if (!agentMoving)
         {
-            checkPlayerAction();
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                currentGameState = gameState.PLAYERTURN;
+                turnTime = 0;
+            }
 
             if (currentGameState == gameState.PLAYERTURN)
             {
-                turnTime += Time.deltaTime;
+                checkPlayerAction();
 
-                if (turnTime >= timeForTurn)
+                if (currentGameState == gameState.PLAYERTURN)
                 {
-                    changeToEnemyTurn();
-                }
-            }
+                    turnTime += Time.deltaTime;
 
+                    if (turnTime >= timeForTurn)
+                    {
+                        changeToEnemyTurn();
+                    }
+                }
+
+            }
         }
+
+        if(currentGameState == gameState.ENEMYTURN)
+        {
+            foreach (Enemy enemy in enemyList)
+            {
+                
+            }
+        }
+
 
         if(currentGameState == gameState.ENEMYACTION)
         {
             foreach (Enemy enemy in enemyList)
             {
-                enemy.MoveNext();
+
+                
+                    if (enemy.canMove())
+                    {
+
+                        //movementScript.StartMoving(enemy.enemyObject, enemy.path.Peek(), enemyMoveSpeed);
+                        //movementScript.isMovinginGrid = true;
+                        Movement enemyMovement = enemy.enemyObject.GetComponent<Movement>();
+                        enemyMovement.StartMoving(enemy.enemyObject, enemy.path.Peek(), enemyMoveSpeed, gameObject);
+                        agentMoving = true;
+                        StartCoroutine(MovingAgent(enemyMovement));
+                        enemy.MoveNext();
+                    }                  
+    
             }
 
-            if (playerMovedThisTurn)
+            if (!agentMoving)
             {
-                currentGameState = gameState.PLAYERACTION;
-            }
-            else
-            {
-                currentGameState = gameState.PLAYERTURN;
-            }
 
+                if (playerMovedThisTurn)
+                {
+                    currentGameState = gameState.PLAYERACTION;
+                }
+                else
+                {
+                    CheckWinLoseCon();
+                    if (currentGameState != gameState.LOSS || currentGameState != gameState.WON)
+                    {
+                        currentGameState = gameState.PLAYERTURN;
+                    }
+
+                }
+            }
+            
         }
+
 
         if(currentGameState == gameState.PLAYERACTION)
         {
-            MoveToCell(grid.GetCell(nextPlayerPos));
-            playerCurrentPosition = nextPlayerPos;
-            playerMovedThisTurn = false;
-            CheckWinLoseCon();
+            if (!agentMoving)
+            {
+                //SnapToCell(grid.GetCell(nextPlayerPos));
+                //movementScript.StartMoving(player, grid.GetCell(nextPlayerPos), enemyMoveSpeed);
+                playerMovement.StartMoving(player, grid.GetCell(nextPlayerPos), enemyMoveSpeed, gameObject);
+                agentMoving=true;
+
+                StartCoroutine(MovingAgent(playerMovement));
+
+                playerCurrentPosition = nextPlayerPos;
+                playerMovedThisTurn = false;
+            }
+
+            if (!agentMoving)
+            {
+                CheckWinLoseCon();
+                if (currentGameState != gameState.LOSS || currentGameState != gameState.WON)
+                {
+                    currentGameState = gameState.ENEMYACTION;
+                }
+            }
         }
     }
 
@@ -182,10 +251,6 @@ public class TurnBaseSystem : MonoBehaviour
             {
                 currentGameState = gameState.WON;
                 Debug.Log("Player Won");
-            }
-            else
-            {
-                currentGameState = gameState.PLAYERTURN;
             }
         }
     }
@@ -243,6 +308,7 @@ public class TurnBaseSystem : MonoBehaviour
     {
         currentGameState = gameState.ENEMYACTION;
         turnTime = 0;
+        temporaryEnemyQueue=enemyQueue;
         //Debug.Log("Enemy Turn");
     }
 
@@ -264,12 +330,25 @@ public class TurnBaseSystem : MonoBehaviour
         else { return false; }
     }
 
-    private void MoveToCell(Cell cell)
+    private void SnapToCell(Cell cell)
     {
         Vector2 playerPos = cell.cellObject.transform.position;
         playerPos.y-= player.transform.GetComponent<SpriteRenderer>().bounds.size.y/2; // Adjust the player's position to be slightly above the cell
         player.transform.position = playerPos;
         playerCurrentPosition=cell.gridPosition;
+
+    }
+
+    /*IEnumerator MovingAgent(GameObject agent,Cell destination, float movSpeed)
+    {
+        movementScript.StartMoving(agent, destination, movSpeed);
+        yield return new WaitUntil(()=>!movementScript.isMovinginGrid);
+      
+    }*/
+
+    IEnumerator MovingAgent(Movement mov)
+    {
+        yield return new WaitUntil(() => !mov.isMovinginGrid);
 
     }
 }
